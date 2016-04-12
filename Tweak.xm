@@ -59,7 +59,6 @@ extern "C" NSString *PLLocalizedFrameworkString(NSString *key, NSString *comment
 
 @interface PUPreviewActionController : NSObject
 @property (nonatomic, retain) PUBrowsingSession *browsingSession;
-- (void)ppsw_setAsWallpaperWithAction:(PUPreviewIdentifiedAction *)action;
 - (void)_notifiyDelegateOfIdentifiedAction:(id)arg1;
 @end
 
@@ -74,26 +73,31 @@ extern "C" NSString *PLLocalizedFrameworkString(NSString *key, NSString *comment
 - (void)ppsw_setAsWallpaper;
 @end
 
+@interface PUOneUpViewController : UIViewController
+@property (nonatomic, readonly) PUPreviewActionController *previewActionController;
+- (void)ppsw_setAsWallpaperWithAction:(PUPreviewIdentifiedAction *)action;
+@end
 
 static PUAssetReference *popedAssetReference;
 
-%hook PUPreviewActionController
+%hook PUOneUpViewController
 
 - (id)previewActionItems {
 
-	NSArray *currentActions = %orig();
+	NSArray *currentActions = %orig;
 	PUPreviewIdentifiedAction *setAsWallpaper = [objc_getClass("PUPreviewIdentifiedAction") actionWithTitle:PLLocalizedFrameworkString(@"USE_AS_WALLPAPER", @"") style:0 handler:^(UIPreviewAction *action, UIViewController *previewViewController) {
-        popedAssetReference = self.browsingSession.viewModel.currentAssetReference;
+        popedAssetReference = self.previewActionController.browsingSession.viewModel.currentAssetReference;
         [self ppsw_setAsWallpaperWithAction:(PUPreviewIdentifiedAction *)action];
     }];
     [setAsWallpaper setActionIdentifier:ACTION_ID];
-	currentActions = [currentActions arrayByAddingObject:setAsWallpaper];
+    NSArray *newActions = [[NSArray alloc] initWithObjects:setAsWallpaper, nil];
+    currentActions = [currentActions arrayByAddingObjectsFromArray:newActions];
 	return currentActions;
 }
 %new
 - (void)ppsw_setAsWallpaperWithAction:(PUPreviewIdentifiedAction *)action {
 	// set as wallpaper
-	[self _notifiyDelegateOfIdentifiedAction:action];
+	[self.previewActionController _notifiyDelegateOfIdentifiedAction:action];
 }
 %end
 
@@ -132,11 +136,14 @@ static PUAssetReference *popedAssetReference;
 }
 %new
 - (void)wallpaperImageViewControllerDidCancel:(PLStaticWallpaperImageViewController *)arg1 {
+
     [arg1 setDelegate:nil];
+    [arg1.navigationController dismissViewControllerAnimated:YES completion:nil];
 }
 %new
 - (void)wallpaperImageViewControllerDidFinishSaving:(PLStaticWallpaperImageViewController *)arg1 {
     [arg1 setDelegate:nil];
+    [arg1.navigationController dismissViewControllerAnimated:YES completion:nil];
 }
 %new
 - (void)wallpaperImageViewControllerDidCropWallpaper:(PLStaticWallpaperImageViewController *)arg1 {
