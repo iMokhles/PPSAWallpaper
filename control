@@ -1,0 +1,9 @@
+Package: com.imokhles.ppsawallpaper
+Name: Photos Pop Set As Wallpaper
+Depends: mobilesubstrate
+Version: 0.1
+Architecture: iphoneos-arm
+Description: set as wallpaper from pop and peek in Photos App
+Maintainer: iMokhles
+Author: iMokhles
+Section: Tweaks
